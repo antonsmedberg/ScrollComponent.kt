@@ -1,199 +1,300 @@
 
-# Kotlin Compose Scrollable Components
+# Anpassad ScrollState i Jetpack Compose
 
-Denna komponentbibliotek erbjuder scrollbara vyer i Jetpack Compose för både vertikal och horisontell scrollning. Du kan enkelt integrera dessa komponenter i dina Compose-projekt för att hantera scrollbar layout.
+Detta projekt demonstrerar implementeringen av en anpassad `ScrollState` i Jetpack Compose, som möjliggör både vertikal och horisontell rullning med omedelbar och animerad rullningsfunktionalitet. Koden innehåller även exempel på återanvändbara komponenter för rullbart innehåll.
 
 ## Funktioner
 
-- **Vertikal scrollning** med `verticalScroll`.
-- **Horisontell scrollning** med `horizontalScroll`.
-- Möjlighet att animera och hoppa till specifika scrollpositioner.
-- Interaktionskällor för att lyssna på användarinteraktioner.
+- Anpassad `ScrollState` med omedelbar och animerad rullningsfunktionalitet.
+- `Modifier.verticalScroll` och `Modifier.horizontalScroll`-utökningar för att lägga till rullbeteende till composables.
+- Komponenter för att visa rullbart innehåll: `ScrollableListView` och `HorizontalScrollableContent`.
+- Användning av `IconButton` för att rulla till början eller slutet av det rullbara innehållet.
 
 ## Installation
 
-För att använda dessa scrollbara komponenter, kopiera `ScrollComponent.kt` till din projektmapp under `ui.components`.
+1. Klona detta repository:
+   ```sh
+   git clone https://github.com/ditt-användarnamn/ditt-repository.git
+   ```
+2. Öppna projektet i Android Studio.
+3. Synkronisera projektet med Gradle-filerna.
 
 ## Användning
 
-### Vertikal Scrollbar Detaljvy
+### ScrollState
 
-För att skapa en vertikal scrollbar detaljvy, använd `MyScrollableDetailView`-komponenten.
+`ScrollState`-klassen tillåter dig att hantera rullpositionen för dina composables. Den stöder både omedelbar och animerad rullning.
 
 ```kotlin
 @Composable
-fun MyScrollableDetailView(content: String) {
+fun rememberScrollState(initial: Int = 0): ScrollState {
+    return rememberSaveable(saver = ScrollState.Saver) {
+        ScrollState(initial = initial)
+    }
+}
+```
+
+### Modifier för rullning
+
+Lägg till vertikalt eller horisontellt rullbeteende till dina composables med de medföljande modifierarna.
+
+```kotlin
+fun Modifier.verticalScroll(
+    state: ScrollState,
+    enabled: Boolean = true,
+    flingBehavior: FlingBehavior? = null,
+    reverseScrolling: Boolean = false
+): Modifier
+
+fun Modifier.horizontalScroll(
+    state: ScrollState,
+    enabled: Boolean = true,
+    flingBehavior: FlingBehavior? = null,
+    reverseScrolling: Boolean = false
+): Modifier
+```
+
+### ScrollableListView
+
+Denna komponent visar vertikalt rullbart innehåll.
+
+```kotlin
+@Composable
+fun ScrollableListView(items: List<@Composable () -> Unit>) {
     val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier
-            .verticalScroll(scrollState)
             .fillMaxSize()
+            .verticalScroll(scrollState)
             .background(MaterialTheme.colorScheme.background)
     ) {
-        Text(
-            text = content,
-            modifier = Modifier
-                .padding(16.dp)
-                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.1f))
-                .fillMaxWidth()
-        )
-        Spacer(modifier = Modifier.height(16.dp))
+        items.forEachIndexed { _, item ->
+            item()
+            Spacer(modifier = Modifier.height(8.dp))
+        }
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            Button(onClick = {
-                coroutineScope.launch {
-                    scrollState.animateScrollTo(0)
-                }
-            }) {
-                Text("Scroll to Top")
+            IconButton(
+                onClick = {
+                    coroutineScope.launch {
+                        scrollState.scrollTo(0)
+                    }
+                },
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(color = MaterialTheme.colorScheme.primary, shape = CircleShape)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowUp,
+                    contentDescription = "Scroll to Top",
+                    tint = Color.White
+                )
             }
-            Button(onClick = {
-                coroutineScope.launch {
-                    scrollState.animateScrollTo(scrollState.maxValue)
-                }
-            }) {
-                Text("Scroll to Bottom")
-            }
-            Button(onClick = {
-                coroutineScope.launch {
-                    scrollState.scrollTo(scrollState.maxValue)
-                }
-            }) {
-                Text("Jump to Bottom")
+            IconButton(
+                onClick = {
+                    coroutineScope.launch {
+                        scrollState.scrollTo(scrollState.maxValue)
+                    }
+                },
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(color = MaterialTheme.colorScheme.primary, shape = CircleShape)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowDown,
+                    contentDescription = "Scroll to Bottom",
+                    tint = Color.White
+                )
             }
         }
     }
 }
 ```
 
-### Horisontell Scrollbar Innehållsvy
+### HorizontalScrollableContent
 
-För att skapa en horisontell scrollbar innehållsvy, använd `MyHorizontalScrollableContent`-komponenten.
+Denna komponent visar horisontellt rullbart innehåll.
 
 ```kotlin
 @Composable
-fun MyHorizontalScrollableContent() {
+fun HorizontalScrollableContent() {
     val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
 
-    Row(
+    Column(
         modifier = Modifier
-            .horizontalScroll(scrollState)
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        for (i in 1..20) {
-            Box(
-                modifier = Modifier
-                    .size(100.dp)
-                    .padding(8.dp)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
-            ) {
-                Text("Item $i", modifier = Modifier.align(Alignment.Center))
+        Row(
+            modifier = Modifier
+                .horizontalScroll(scrollState)
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            for (i in 1..20) {
+                Box(
+                    modifier = Modifier
+                        .size(100.dp)
+                        .padding(8.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                            shape = RoundedCornerShape(8.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("Item $i", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onPrimary)
+                }
             }
         }
         Spacer(modifier = Modifier.height(16.dp))
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            Button(onClick = {
-                coroutineScope.launch {
-                    scrollState.animateScrollTo(0)
-                }
-            }) {
-                Text("Scroll to Start")
+            IconButton(
+                onClick = {
+                    coroutineScope.launch {
+                        scrollState.scrollTo(0)
+                    }
+                },
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(color = MaterialTheme.colorScheme.primary, shape = CircleShape)
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Scroll to Start",
+                    tint = Color.White
+                )
             }
-            Button(onClick = {
-                coroutineScope.launch {
-                    scrollState.animateScrollTo(scrollState.maxValue)
-                }
-            }) {
-                Text("Scroll to End")
-            }
-            Button(onClick = {
-                coroutineScope.launch {
-                    scrollState.scrollTo(scrollState.maxValue)
-                }
-            }) {
-                Text("Jump to End")
+            IconButton(
+                onClick = {
+                    coroutineScope.launch {
+                        scrollState.scrollTo(scrollState.maxValue)
+                    }
+                },
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(color = MaterialTheme.colorScheme.primary, shape = CircleShape)
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = "Scroll to End",
+                    tint = Color.White
+                )
             }
         }
     }
 }
 ```
 
-## ScrollState
+### Förhandsgranskning
 
-ScrollState används för att hantera scrollpositioner och tillhandahålla metoder för att animera eller hoppa till specifika positioner.
-
-### Funktioner
-
-- **scrollTo(value: Int)**: Hoppar omedelbart till en given position i pixlar.
-- **animateScrollTo(value: Int, animationSpec: AnimationSpec<Float>)**: Animerar scrollningen till en given position i pixlar.
-
-### Användningsexempel
+Förhandsgranska komponenterna i IDE:n.
 
 ```kotlin
-val scrollState = rememberScrollState()
-
-// Scrolla till toppen
-coroutineScope.launch {
-    scrollState.scrollTo(0)
+@Preview(showBackground = true)
+@Composable
+fun PreviewScrollableListView() {
+    MaterialTheme(
+        colorScheme = darkColorScheme(
+            primary = Color(0xFFBB86FC),
+            onPrimary = Color.Black,
+            background = Color(0xFF121212),
+            surface = Color(0xFF121212),
+            onSurface = Color.White
+        )
+    ) {
+        ScrollableListView(
+            items = List(20) { index ->
+                {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    ) {
+                        Text(
+                            text = "Item $index",
+                            modifier = Modifier.padding(16.dp),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
+        )
+    }
 }
 
-// Animerad scrollning till botten
-coroutineScope.launch {
-    scrollState.animateScrollTo(scrollState.maxValue)
+@Preview(showBackground = true)
+@Composable
+fun PreviewHorizontalScrollableContent() {
+    MaterialTheme(
+        colorScheme = darkColorScheme(
+            primary = Color(0xFFBB86FC),
+            onPrimary = Color.Black,
+            background = Color(0xFF121212),
+            surface = Color(0xFF121212),
+            onSurface = Color.White
+        )
+    ) {
+        HorizontalScrollableContent()
+    }
 }
 ```
 
-## Modifier Extensions
+### Hur man återanvänder
 
-- **Modifier.verticalScroll**: Lägger till vertikal scrollfunktionalitet.
-- **Modifier.horizontalScroll**: Lägger till horisontell scrollfunktionalitet.
+1. **Vertikalt rullbart innehåll**: Använd `ScrollableListView`-komponenten för att visa en lista med objekt som kan rullas vertikalt. Du kan anpassa objekten efter dina behov.
+
+2. **Horisontellt rullbart innehåll**: Använd `HorizontalScrollableContent`-komponenten för att visa en lista med objekt som kan rullas horisontellt. Anpassa objekten efter behov.
 
 ### Exempel
 
-```kotlin
-Column(
-    modifier = Modifier.verticalScroll(scrollState)
-) {
-    // Innehåll
-}
+#### Vertikalt rullbart innehåll
 
-Row(
-    modifier = Modifier.horizontalScroll(scrollState)
-) {
-    // Innehåll
+```kotlin
+@Composable
+fun ExampleVerticalScrollableListView() {
+    ScrollableListView(
+        items = List(20) { index ->
+            {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Text(
+                        text = "Item $index",
+                        modifier = Modifier.padding(16.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+        }
+    )
 }
 ```
 
-## Preview
-
-För att förhandsgranska komponenterna, använd `@Preview`-anoteringen:
+#### Horisontellt rullbart innehåll
 
 ```kotlin
-@Preview(showBackground = true)
 @Composable
-fun PreviewMyScrollableDetailView() {
-    MyScrollableDetailView(content = "Detta är en lång text för att visa hur scroll fungerar i en detaljvy. " +
-            "Du kan lägga till så mycket text du vill här för att se scrollbeteendet.")
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PreviewMyHorizontalScrollableContent() {
-    MyHorizontalScrollableContent()
+fun ExampleHorizontalScrollableContent() {
+    HorizontalScrollableContent()
 }
 ```
 
-## Slutsats
 
-Denna scrollbara komponentbibliotek erbjuder enkel och flexibel hantering av både vertikal och horisontell scrollning i Jetpack Compose. Anpassa komponenterna efter dina behov och integrera dem i dina projekt för att förbättra användarupplevelsen.
-
-För ytterligare information och exempel, se källkoden i `ScrollComponent.kt`.
